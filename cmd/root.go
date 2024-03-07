@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"os"
 
+	"github.com/Tifufu/tools-cli/cmd/amprod"
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/cmd/profile"
 	"github.com/Tifufu/tools-cli/pkg"
@@ -59,5 +60,6 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 	cmd.AddCommand(
 		newLoginCommand(),
 		profile.NewProfileCommand(toolsCli),
+		amprod.NewAmProdCommand(toolsCli),
 	)
 }
