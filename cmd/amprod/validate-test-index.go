@@ -11,7 +11,6 @@ import (
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 )
 
 type validateTestIndexOptions struct {
@@ -98,6 +97,11 @@ func validateTestFile(dir, filename string, testInfo testFileInfo, logger *log.L
 	}
 	defer testFile.Close()
 
+	methodsFound := make(map[string]bool)
+	for _, method := range testInfo.Methods {
+		methodsFound[method] = false
+	}
+
 	scanner := bufio.NewScanner(testFile)
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -112,11 +116,16 @@ func validateTestFile(dir, filename string, testInfo testFileInfo, logger *log.L
 		}
 
 		line = bytes.TrimSpace(line)
-		methodName := make([]byte, len(line))
-		copy(methodName, line)
+		methodsFound[string(line)] = true
+	}
 
-		if !slices.Contains(testInfo.Methods, string(methodName)) {
-			logger.Warn("Missing method", "method", string(methodName))
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	for method, found := range methodsFound {
+		if !found {
+			logger.Error("Missing", "method", method)
 		}
 	}
 
