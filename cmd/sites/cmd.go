@@ -7,25 +7,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-type siteDetails struct {
-	Prod    string
-	Staging string
-}
+type siteLinks map[string]string
+
+var sites map[string]siteLinks
 
 type sitesOptions struct {
-	site        string
-	openStaging bool
+	site string
+	tag  string
 }
 
 func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 	opts := &sitesOptions{}
-	var sites = map[string]siteDetails{}
 
 	cmd := &cobra.Command{
 		Use:   "sites",
 		Short: "Access to various tool sites",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			sites = make(map[string]siteDetails)
+			sites = make(map[string]siteLinks)
 			err := viper.UnmarshalKey("sites", &sites)
 			if err != nil {
 				tCli.Log.Fatal("Error reading sites from config", "err", err)
@@ -38,38 +36,40 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 				return
 			}
 
-			site, ok := sites[opts.site]
+			links, ok := sites[opts.site]
 			if !ok {
 				tCli.Log.Print("Site not found.", "site", opts.site)
 				tCli.Log.Print("View all sites with", "command", "tools-cli sites list")
 				return
 			}
 
-			var url string
-			if opts.openStaging {
-				url = site.Staging
-			} else {
-				url = site.Prod
-			}
-
-			if url == "" {
-				tCli.Log.Print("No URL found for site", "site", opts.site, "staging", opts.openStaging)
+			link, ok := links[opts.tag]
+			if !ok {
+				tCli.Log.Print("Tag not found.", "tag", opts.tag)
+				tCli.Log.Print("View all tags with", "command", "tools-cli sites list --site <site>")
 				return
 			}
 
-			tCli.Log.Print("Opening site", "site", opts.site, "url", url)
-			pkg.OpenURL(url)
+			tCli.Log.Print("Opening", "link", link)
+			pkg.OpenURL(link)
+		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			viper.Set("sites", sites)
+			err := viper.WriteConfig()
+			if err != nil {
+				tCli.Log.Fatal("Error saving to config", "err", err)
+			}
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.site, "site", "s", "", "The site to open")
+	cmd.Flags().StringVarP(&opts.site, "site", "s", "", "Open link corresponding to site")
 	cmd.MarkFlagRequired("site")
+	cmd.Flags().StringVarP(&opts.tag, "tag", "t", "", "Open link corresponding to tag")
+	cmd.MarkFlagRequired("tag") // Todo: Moke this optional, if optional then list all links and use charm form to select
 
-	cmd.Flags().BoolVar(&opts.openStaging, "staging", false, "Open staging site")
+	// Todo: Register for autocompletion
 
-	//Todo: Register for autocompletion
-
-	cmd.AddCommand(newAddCommand())
+	cmd.AddCommand(newAddCommand(tCli))
 
 	return cmd
 }
