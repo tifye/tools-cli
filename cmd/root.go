@@ -6,6 +6,7 @@ import (
 
 	"github.com/Tifufu/tools-cli/cmd/amprod"
 	"github.com/Tifufu/tools-cli/cmd/cli"
+	"github.com/Tifufu/tools-cli/cmd/config"
 	"github.com/Tifufu/tools-cli/cmd/profile"
 	"github.com/Tifufu/tools-cli/cmd/sites"
 	"github.com/Tifufu/tools-cli/pkg"
@@ -69,5 +70,6 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 		sites.NewSitesCommand(toolsCli),
 		profile.NewProfileCommand(toolsCli),
 		amprod.NewAmProdCommand(toolsCli),
+		config.NewConfigCommand(toolsCli),
 	)
 }

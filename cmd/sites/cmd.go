@@ -60,9 +60,6 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 			tCli.Log.Print("Opening site", "site", opts.site, "url", url)
 			pkg.OpenURL(url)
 		},
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			viper.Set("sites", sites)
-		},
 	}
 
 	cmd.Flags().StringVarP(&opts.site, "site", "s", "", "The site to open")

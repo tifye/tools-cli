@@ -3,20 +3,24 @@ package cli
 import (
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/viper"
 )
 
-func InitConfig() {
+func GetConfigPath() string {
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
 		log.Fatal(err)
 	}
+	return filepath.Join(cacheDir, "tools-cli")
+}
 
+func InitConfig() {
 	setDefaults(viper.GetViper())
 
-	configDir := path.Join(cacheDir, "tools-cli")
+	configDir := GetConfigPath()
 	viper.AddConfigPath(configDir)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
