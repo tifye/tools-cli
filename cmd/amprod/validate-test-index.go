@@ -73,7 +73,6 @@ func runValidateTestIndex(toolsCli *cli.ToolsCli, opts *validateTestIndexOptions
 		if err != nil {
 			return err
 		}
-		logger.Print("\n")
 	}
 
 	return nil
@@ -104,7 +103,7 @@ func validateTestFile(dir, filename string, testInfo testFileInfo, logger *log.L
 
 	scanner := bufio.NewScanner(testFile)
 	for scanner.Scan() {
-		line := scanner.Bytes()
+		line := bytes.TrimSpace(scanner.Bytes())
 		line, hadPrefix := bytes.CutPrefix(line, []byte("def"))
 		if !hadPrefix {
 			continue
