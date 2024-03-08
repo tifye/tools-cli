@@ -72,6 +72,7 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 	cmd.AddCommand(
 		newAddCommand(tCli),
 		newListCommand(tCli),
+		newRemoveCommand(tCli),
 	)
 
 	return cmd
