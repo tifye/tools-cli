@@ -7,6 +7,7 @@ import (
 	"github.com/Tifufu/tools-cli/cmd/amprod"
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/cmd/profile"
+	"github.com/Tifufu/tools-cli/cmd/sites"
 	"github.com/Tifufu/tools-cli/pkg"
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
@@ -46,7 +47,13 @@ func newRootCommand(toolsCli *cli.ToolsCli) *cobra.Command {
 func Execute() {
 	initConfig()
 
-	toolsCli := &cli.ToolsCli{}
+	logger := log.NewWithOptions(os.Stdout, log.Options{
+		ReportCaller:    false,
+		ReportTimestamp: false,
+	})
+	toolsCli := &cli.ToolsCli{
+		Log: logger,
+	}
 	rootCmd = newRootCommand(toolsCli)
 	addCommands(rootCmd, toolsCli)
 
@@ -59,6 +66,7 @@ func Execute() {
 func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 	cmd.AddCommand(
 		newLoginCommand(),
+		sites.NewSitesCommand(toolsCli),
 		profile.NewProfileCommand(toolsCli),
 		amprod.NewAmProdCommand(toolsCli),
 	)
