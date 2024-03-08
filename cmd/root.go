@@ -45,7 +45,7 @@ func newRootCommand(toolsCli *cli.ToolsCli) *cobra.Command {
 }
 
 func Execute() {
-	initConfig()
+	cli.InitConfig()
 
 	logger := log.NewWithOptions(os.Stdout, log.Options{
 		ReportCaller:    false,

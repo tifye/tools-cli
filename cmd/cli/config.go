@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func initConfig() {
+func InitConfig() {
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
 		log.Fatal(err)
