@@ -69,7 +69,10 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 
 	// Todo: Register for autocompletion
 
-	cmd.AddCommand(newAddCommand(tCli))
+	cmd.AddCommand(
+		newAddCommand(tCli),
+		newListCommand(tCli),
+	)
 
 	return cmd
 }
