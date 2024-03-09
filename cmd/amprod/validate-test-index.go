@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/charmbracelet/log"
@@ -14,10 +16,11 @@ import (
 )
 
 type validateTestIndexOptions struct {
-	indexPath string
+	directory string
 }
 
 type testFileInfo struct {
+	Name     string   `json:"name"`
 	Filename string   `json:"file"`
 	Methods  []string `json:"methods"`
 }
@@ -27,49 +30,92 @@ type testsManifest struct {
 	Sequence []testFileInfo `json:"sequence"`
 }
 
-func newValidateTestIndexCommand(toolsCli *cli.ToolsCli) *cobra.Command {
+func newValidateTestIndexCommand(tCli *cli.ToolsCli) *cobra.Command {
 	opts := &validateTestIndexOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "validate-test-index",
 		Short: "Validate test index",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := runValidateTestIndex(toolsCli, opts); err != nil {
-				log.Error("Error validating test index.json", "err", err)
+			defer timer("walkDir", tCli.Log)()
+
+			err := filepath.WalkDir(opts.directory, walkDirFunc(tCli.Log))
+			if err != nil {
+				tCli.Log.Error("Error validating test index.json", "err", err)
 				return
 			}
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.indexPath, "index", "i", "", "Path to the index.json file")
-	cmd.MarkFlagFilename("index.json")
-	cmd.MarkFlagRequired("index")
+	cmd.Flags().StringVarP(&opts.directory, "directory", "d", "", "Directory in which to validate test index.json and all subdirectories.")
+	cmd.MarkFlagDirname("directory")
+	cmd.MarkFlagRequired("directory")
 
 	return cmd
 }
 
-func runValidateTestIndex(toolsCli *cli.ToolsCli, opts *validateTestIndexOptions) error {
-	file, err := os.Open(opts.indexPath)
-	if err != nil {
+func walkDirFunc(logger *log.Logger) fs.WalkDirFunc {
+	return func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if entry.IsDir() {
+			logger.Debug("Walking", "path", path)
+			return err
+		}
+
+		if entry.Name() != "index.json" {
+			return err
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		defer logger.Print("")
+
+		decoder := json.NewDecoder(file)
+		var manifest testsManifest
+		err = decoder.Decode(&manifest)
+		if err != nil {
+			logger.Error("Error decoding index.json", "err", err, "path", path)
+			return nil
+		}
+
+		err = validateTestManifest(manifest, filepath.Dir(path), logger)
 		return err
 	}
-	defer file.Close()
+}
 
-	decoder := json.NewDecoder(file)
-	var manifest testsManifest
-	err = decoder.Decode(&manifest)
-	if err != nil {
-		return fmt.Errorf("error decoding index.json: %w", err)
-	}
+func validateTestManifest(manifest testsManifest, dir string, logger *log.Logger) error {
+	logger.Info("Validating", "index", manifest.Name, "dir", dir)
 
-	logger := log.NewWithOptions(os.Stderr, log.Options{
-		Level:           log.InfoLevel,
-		ReportTimestamp: false,
-		ReportCaller:    false,
-	})
-	testsDir := filepath.Dir(opts.indexPath)
 	for _, test := range manifest.Sequence {
-		err := validateTestFile(testsDir, test.Filename, test, logger)
+		if test.Filename == "" {
+			logger.Warn("Test with missing filename", "test", test.Name, "methods", test.Methods)
+			continue
+		}
+
+		err := func(test testFileInfo) error {
+			fpath := filepath.Join(dir, test.Filename)
+			testFile, err := os.Open(fpath)
+			switch err.(type) {
+			case *os.PathError:
+				logger.Warn("Test file not found", "test", test.Name, "file", test.Filename, "path", fpath)
+				return nil
+			case nil:
+				// continue
+			default:
+				return err
+			}
+			defer testFile.Close()
+
+			return validateTestFile(testFile, test, logger)
+		}(test)
+
 		if err != nil {
 			return err
 		}
@@ -78,30 +124,13 @@ func runValidateTestIndex(toolsCli *cli.ToolsCli, opts *validateTestIndexOptions
 	return nil
 }
 
-func validateTestFile(dir, filename string, testInfo testFileInfo, logger *log.Logger) error {
-	logger = logger.WithPrefix(filename)
-
-	testFilePath := filepath.Join(dir, filename)
-	logger.Info("Validating", "methods", testInfo.Methods)
-
-	testFile, err := os.Open(testFilePath)
-	switch err.(type) {
-	case *os.PathError:
-		logger.Error("Test file not found", "file", testFilePath)
-		return nil
-	case nil:
-		// continue
-	default:
-		return err
-	}
-	defer testFile.Close()
-
+func validateTestFile(content io.Reader, testInfo testFileInfo, logger *log.Logger) error {
 	methodsFound := make(map[string]bool)
 	for _, method := range testInfo.Methods {
 		methodsFound[method] = false
 	}
 
-	scanner := bufio.NewScanner(testFile)
+	scanner := bufio.NewScanner(content)
 	for scanner.Scan() {
 		line := bytes.TrimSpace(scanner.Bytes())
 		line, hadPrefix := bytes.CutPrefix(line, []byte("def"))
@@ -124,9 +153,16 @@ func validateTestFile(dir, filename string, testInfo testFileInfo, logger *log.L
 
 	for method, found := range methodsFound {
 		if !found {
-			logger.Error("Missing", "method", method)
+			logger.Warn("Missing method", "test", testInfo.Name, "filename", testInfo.Filename, "method", method)
 		}
 	}
 
 	return nil
+}
+
+func timer(name string, logger *log.Logger) func() {
+	start := time.Now()
+	return func() {
+		logger.Debugf("%s: executed in %s", name, time.Since(start))
+	}
 }
