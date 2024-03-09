@@ -67,6 +67,7 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.tag, "tag", "t", "", "Open link corresponding to tag")
 	cmd.MarkFlagRequired("tag") // Todo: Moke this optional, if optional then list all links and use charm form to select
 
+	// Todo: Add base tag command
 	// Todo: Register for autocompletion
 
 	cmd.AddCommand(

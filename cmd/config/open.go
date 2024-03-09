@@ -2,6 +2,7 @@ package config
 
 import (
 	"os/exec"
+	"path/filepath"
 
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/pkg"
@@ -19,17 +20,20 @@ func newOpenCommand(tCli *cli.ToolsCli) *cobra.Command {
 		Use:   "open",
 		Short: "Open a configuration file",
 		Run: func(cmd *cobra.Command, args []string) {
-			filepath := cli.GetConfigPath()
+			fpath := cli.ConfigPath()
 
 			if opts.openInVSCode {
-				err := exec.Command("code", filepath).Run()
+				tCli.Log.Debug("Opening config in vscode", "path", fpath)
+				err := exec.Command("code", fpath).Run()
 				if err != nil {
 					tCli.Log.Fatal("Error opening config in VSCode", "err", err)
 				}
 				return
 			}
 
-			err := pkg.OpenURL(filepath)
+			dir := filepath.Dir(fpath)
+			tCli.Log.Debug("Opening config directory", "dir", dir)
+			err := pkg.OpenURL(dir)
 			if err != nil {
 				tCli.Log.Fatal("Error opening config", "err", err)
 			}

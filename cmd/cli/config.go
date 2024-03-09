@@ -2,38 +2,49 @@ package cli
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/viper"
 )
 
-func GetConfigPath() string {
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return filepath.Join(cacheDir, "tools-cli")
+var configPath string
+
+func SetConfigPath(path string) {
+	configPath = path
+}
+
+func ConfigPath() string {
+	return configPath
 }
 
 func InitConfig() {
 	setDefaults(viper.GetViper())
 
-	configDir := GetConfigPath()
-	viper.AddConfigPath(configDir)
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	if configPath != "" {
+		viper.SetConfigFile(configPath)
+	} else {
+		cacheDir, err := os.UserCacheDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+		configDir := filepath.Join(cacheDir, "tools-cli")
+		viper.AddConfigPath(configDir)
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+		SetConfigPath(filepath.Join(configDir, "config.yaml"))
+	}
 
+	configPath = ConfigPath()
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			err := os.MkdirAll(configDir, 0755)
+			err := os.MkdirAll(configPath, 0755)
 			if err != nil {
 				log.Error(err)
 			}
-			if err := viper.WriteConfigAs(path.Join(configDir, "config.yaml")); err != nil {
+			if err := viper.WriteConfig(); err != nil {
 				log.Error(err)
 			}
 		} else {
