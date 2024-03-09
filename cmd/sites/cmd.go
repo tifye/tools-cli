@@ -1,6 +1,8 @@
 package sites
 
 import (
+	"strings"
+
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/pkg"
 	"github.com/spf13/cobra"
@@ -12,8 +14,7 @@ type siteLinks map[string]string
 var sites map[string]siteLinks
 
 type sitesOptions struct {
-	site string
-	tag  string
+	siteTag string
 }
 
 func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
@@ -30,28 +31,7 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(sites) == 0 {
-				tCli.Log.Print("No sites registered.")
-				tCli.Log.Print("Add a site with", "command", "tools-cli add site --site <site> --url <url>")
-				return
-			}
-
-			links, ok := sites[opts.site]
-			if !ok {
-				tCli.Log.Print("Site not found.", "site", opts.site)
-				tCli.Log.Print("View all sites with", "command", "tools-cli sites list")
-				return
-			}
-
-			link, ok := links[opts.tag]
-			if !ok {
-				tCli.Log.Print("Tag not found.", "tag", opts.tag)
-				tCli.Log.Print("View all tags with", "command", "tools-cli sites list --site <site>")
-				return
-			}
-
-			tCli.Log.Print("Opening", "link", link)
-			pkg.OpenURL(link)
+			runSites(tCli, opts)
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			viper.Set("sites", sites)
@@ -62,10 +42,8 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.site, "site", "s", "", "Open link corresponding to site")
+	cmd.Flags().StringVarP(&opts.siteTag, "site", "s", "", "Open link corresponding to site")
 	cmd.MarkFlagRequired("site")
-	cmd.Flags().StringVarP(&opts.tag, "tag", "t", "", "Open link corresponding to tag")
-	cmd.MarkFlagRequired("tag") // Todo: Moke this optional, if optional then list all links and use charm form to select
 
 	// Todo: Add base tag command
 	// Todo: Register for autocompletion
@@ -77,4 +55,36 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 	)
 
 	return cmd
+}
+
+func runSites(tCli *cli.ToolsCli, opts *sitesOptions) {
+	if len(sites) == 0 {
+		tCli.Log.Error("No sites registered.")
+		tCli.Log.Info("Add a site with", "command", "tools-cli add site --site <site> --url <url>")
+		return
+	}
+
+	parts := strings.Split(opts.siteTag, ":")
+	site := parts[0]
+	tag := ""
+	if len(parts) > 1 {
+		tag = parts[1]
+	}
+
+	links, ok := sites[site]
+	if !ok {
+		tCli.Log.Error("Site not found.", "site", site)
+		tCli.Log.Info("View all sites with", "command", "tools-cli sites list")
+		return
+	}
+
+	link, ok := links[tag]
+	if !ok {
+		tCli.Log.Error("Tag not found.", "tag", tag)
+		tCli.Log.Info("View all tags with", "command", "tools-cli sites list --site <site>")
+		return
+	}
+
+	tCli.Log.Print("Opening", "link", link)
+	pkg.OpenURL(link)
 }

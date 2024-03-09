@@ -55,4 +55,5 @@ func InitConfig() {
 
 func setDefaults(vpr *viper.Viper) {
 	vpr.SetDefault("appId", "Robotics.StolenMowers.Service@husqvarnagroup.com")
+	// Todo: Add sites defaults
 }
