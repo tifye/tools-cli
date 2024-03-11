@@ -57,7 +57,8 @@ func AuthenticateUser(ctx context.Context, appId string) (*UserProfile, error) {
 	})
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("ListenAndServer()", "err", err)
+			close(userChan)
+			log.Fatal("ListenAndServer()", "err", err)
 		}
 	}()
 
@@ -76,7 +77,7 @@ func AuthenticateUser(ctx context.Context, appId string) (*UserProfile, error) {
 	select {
 	case userId = <-userChan:
 	case <-ctx.Done():
-		return nil, fmt.Errorf("Timeout while waiting for authentication callback %w", ctx.Err())
+		return nil, fmt.Errorf("timeout while waiting for authentication callback %w", ctx.Err())
 	}
 
 	if err := server.Shutdown(ctx); err != nil {
@@ -92,7 +93,7 @@ func AuthenticateUser(ctx context.Context, appId string) (*UserProfile, error) {
 	case err := <-errChan:
 		return nil, err
 	case <-ctx.Done():
-		return nil, fmt.Errorf("Timeout while resolving user profile %w", ctx.Err())
+		return nil, fmt.Errorf("timeout while resolving user profile %w", ctx.Err())
 	}
 }
 
@@ -106,7 +107,7 @@ func resolveUserId(userId string, userProfileChan chan<- *UserProfile, errChan c
 	switch res.StatusCode {
 	case http.StatusOK:
 	case http.StatusConflict:
-		errChan <- fmt.Errorf("The authentication key was already consumed, please try again %d", res.StatusCode)
+		errChan <- fmt.Errorf("the authentication key was already consumed %d", res.StatusCode)
 		return
 	default:
 		bytes, err := io.ReadAll(res.Body)
@@ -114,7 +115,7 @@ func resolveUserId(userId string, userProfileChan chan<- *UserProfile, errChan c
 			errChan <- err
 			return
 		}
-		errChan <- fmt.Errorf("Unexpected status code during auth: %d, %s", res.StatusCode, string(bytes))
+		errChan <- fmt.Errorf("unexpected status code during auth: %d, %s", res.StatusCode, string(bytes))
 		return
 	}
 
@@ -133,12 +134,12 @@ func resolveUserId(userId string, userProfileChan chan<- *UserProfile, errChan c
 func DecryptUserProfile(data []byte) (*UserProfile, error) {
 	decrypted, err := Decrypt(data, []byte(encryptionKey))
 	if err != nil {
-		return nil, fmt.Errorf("Error decrypting data: %w", err)
+		return nil, fmt.Errorf("error decrypting data: %w", err)
 	}
 
 	var userProfile UserProfile
 	if err := json.Unmarshal(decrypted, &userProfile); err != nil {
-		return nil, fmt.Errorf("Error unmarshalling decrypted data: %w", err)
+		return nil, fmt.Errorf("error unmarshalling decrypted data: %w", err)
 	}
 	return &userProfile, nil
 }

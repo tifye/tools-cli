@@ -11,7 +11,7 @@ type addOptions struct {
 	tagLinks map[string]string
 }
 
-func newAddCommand(tCli *cli.ToolsCli) *cobra.Command {
+func newAddCommand(_ *cli.ToolsCli) *cobra.Command {
 	opts := &addOptions{}
 	cmd := &cobra.Command{
 		Use:   "add",
