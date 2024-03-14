@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,8 +26,6 @@ var (
 	tCli    *cli.ToolsCli
 )
 
-const encryptionKey string = "{7f8d534a-bf20-4e69-bbf8-54f4a9378f23}"
-
 type persistentOptions struct {
 	configPath string
 	logDebug   bool
@@ -33,29 +33,12 @@ type persistentOptions struct {
 
 var opts = &persistentOptions{}
 
-func newRootCommand(tCli *cli.ToolsCli) *cobra.Command {
+func newRootCommand(_ *cli.ToolsCli) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tools",
 		Short: "Robotics tools CLI",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
-		},
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			encryptedUser := viper.GetString("user")
-			if encryptedUser == "" {
-				tCli.Log.Fatal("User not authenticated. Please run 'tools login'")
-			}
-			decoded, err := base64.StdEncoding.DecodeString(encryptedUser)
-			if err != nil {
-				tCli.Log.Fatal("Error decoding user profile", "err", err)
-			}
-			user, err := security.DecryptUserProfile(decoded)
-			if err != nil {
-				tCli.Log.Fatal("Error decrypting user profile", "err", err)
-			}
-			tCli.User = user
-
-			tCli.Client.Transport = security.NewTifAuthTransport(http.DefaultTransport, user.APIKey, user.AccessToken)
 		},
 	}
 
@@ -74,6 +57,15 @@ func init() {
 			cli.SetConfigPath(opts.configPath)
 		},
 		cli.InitConfig,
+		func() {
+			user, err := decodeCachedAuth()
+			if err != nil {
+				tCli.Log.Debug("Error decoding cached auth", "err", err)
+				return
+			}
+
+			tCli.Client.Transport = security.NewTifAuthTransport(http.DefaultTransport, user.APIKey, user.AccessToken)
+		},
 		func() {
 			tCli.WinMowerRegistry = pkg.NewWinMowerRegistry(filepath.Join(cli.ConfigDir(), "winmowers"), tCli.BundleRegistry, tCli.Log)
 			tCli.WinMowerRegistry.WithClient(*tCli.Client)
@@ -113,4 +105,21 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 		config.NewConfigCommand(toolsCli),
 		winmower.NewWinMowerCommand(toolsCli),
 	)
+}
+
+func decodeCachedAuth() (*security.UserProfile, error) {
+	encryptedUser := viper.GetString("user")
+	if encryptedUser == "" {
+		return nil, errors.New("user not authenticated. Please run 'tools login'")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(encryptedUser)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding user profile: %v", err)
+	}
+	user, err := security.DecryptUserProfile(decoded)
+	if err != nil {
+		return nil, fmt.Errorf("error decrypting user profile: %v", err)
+	}
+
+	return user, nil
 }
