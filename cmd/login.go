@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"time"
 
-	"github.com/Tifufu/tools-cli/pkg"
+	"github.com/Tifufu/tools-cli/pkg/security"
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,14 +22,14 @@ func newLoginCommand() *cobra.Command {
 }
 
 func runLogin(cmd *cobra.Command, args []string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	user, err := pkg.AuthenticateUser(ctx, viper.GetString("appId"))
+	user, err := security.AuthenticateUser(ctx, viper.GetString("appId"))
 	if err != nil {
 		return err
 	}
 
-	encrypted, err := pkg.EncryptUserProfile(user)
+	encrypted, err := security.EncryptUserProfile(user)
 	if err != nil {
 		return err
 	}

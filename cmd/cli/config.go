@@ -18,6 +18,10 @@ func ConfigPath() string {
 	return configPath
 }
 
+func ConfigDir() string {
+	return filepath.Dir(configPath)
+}
+
 func InitConfig() {
 	setDefaults(viper.GetViper())
 

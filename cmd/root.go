@@ -2,14 +2,18 @@ package cmd
 
 import (
 	"encoding/base64"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/Tifufu/tools-cli/cmd/amprod"
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/cmd/config"
 	"github.com/Tifufu/tools-cli/cmd/profile"
 	"github.com/Tifufu/tools-cli/cmd/sites"
+	winmower "github.com/Tifufu/tools-cli/cmd/win-mower"
 	"github.com/Tifufu/tools-cli/pkg"
+	"github.com/Tifufu/tools-cli/pkg/security"
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,11 +49,13 @@ func newRootCommand(tCli *cli.ToolsCli) *cobra.Command {
 			if err != nil {
 				tCli.Log.Fatal("Error decoding user profile", "err", err)
 			}
-			user, err := pkg.DecryptUserProfile(decoded)
+			user, err := security.DecryptUserProfile(decoded)
 			if err != nil {
 				tCli.Log.Fatal("Error decrypting user profile", "err", err)
 			}
 			tCli.User = user
+
+			tCli.Client.Transport = security.NewTifAuthTransport(http.DefaultTransport, user.APIKey, user.AccessToken)
 		},
 	}
 
@@ -68,6 +74,10 @@ func init() {
 			cli.SetConfigPath(opts.configPath)
 		},
 		cli.InitConfig,
+		func() {
+			tCli.WinMowerRegistry = pkg.NewWinMowerRegistry(filepath.Join(cli.ConfigDir(), "winmowers"), tCli.BundleRegistry, tCli.Log)
+			tCli.WinMowerRegistry.WithClient(*tCli.Client)
+		},
 	)
 }
 
@@ -76,9 +86,15 @@ func Execute() {
 		ReportCaller:    false,
 		ReportTimestamp: false,
 	})
+	client := http.DefaultClient
+	bundleRegistry := pkg.NewBundleRegistry("https://hqvrobotics.azure-api.net")
+	bundleRegistry.WithClient(*client)
 	tCli = &cli.ToolsCli{
-		Log: logger,
+		Log:            logger,
+		BundleRegistry: bundleRegistry,
+		Client:         client,
 	}
+
 	rootCmd = newRootCommand(tCli)
 	addCommands(rootCmd, tCli)
 
@@ -95,5 +111,6 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 		profile.NewProfileCommand(toolsCli),
 		amprod.NewAmProdCommand(toolsCli),
 		config.NewConfigCommand(toolsCli),
+		winmower.NewWinMowerCommand(toolsCli),
 	)
 }
