@@ -14,7 +14,10 @@ func NewWinMowerCommand(tCli *cli.ToolsCli) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newDownloadCommand(tCli))
+	cmd.AddCommand(
+		newDownloadCommand(tCli),
+		newStartCommand(tCli),
+	)
 
 	return cmd
 }
