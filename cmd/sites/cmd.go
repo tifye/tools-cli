@@ -31,6 +31,12 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				tCli.Log.Error("No site specified.")
+				tCli.Log.Info("View all sites with", "command", "tools-cli sites list")
+				return
+			}
+			opts.siteTag = args[0]
 			runSites(tCli, opts)
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
@@ -42,10 +48,6 @@ func NewSitesCommand(tCli *cli.ToolsCli) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.siteTag, "site", "s", "", "Open link corresponding to site")
-	cmd.MarkFlagRequired("site")
-
-	// Todo: Add base tag command
 	// Todo: Register for autocompletion
 
 	cmd.AddCommand(
