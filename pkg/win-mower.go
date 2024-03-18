@@ -35,7 +35,7 @@ func (w *WinMowerRegistry) WithClient(client http.Client) {
 	w.client = client
 }
 
-func (w *WinMowerRegistry) GetWinMower(platform Platform, ctx context.Context) (*WinMower, error) {
+func (w *WinMowerRegistry) DownloadWinMower(platform Platform, ctx context.Context) (*WinMower, error) {
 	wm, err := w.GetCachedWinMower(platform, ctx)
 	if err != nil {
 		return nil, err
@@ -69,11 +69,12 @@ func (w *WinMowerRegistry) GetWinMower(platform Platform, ctx context.Context) (
 
 	dir := filepath.Join(w.CacheDir, platform.String())
 	req, err := http.NewRequestWithContext(ctx, "GET", latestBuild.BlobUrl, nil)
+	w.logger.Debug(latestBuild.BlobUrl)
 	if err != nil {
 		return nil, err
 	}
 	w.logger.Debug("Downloading and unpacking winmower...")
-	err = DownloadAndUnpack(req, dir)
+	err = DownloadAndUnpack(req, &w.client, dir)
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/Tifufu/tools-cli/cmd/amprod"
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/cmd/config"
+	gsimLaunch "github.com/Tifufu/tools-cli/cmd/gsim-web-launch"
 	"github.com/Tifufu/tools-cli/cmd/profile"
 	"github.com/Tifufu/tools-cli/cmd/sites"
 	winmower "github.com/Tifufu/tools-cli/cmd/win-mower"
@@ -49,6 +50,8 @@ func newRootCommand(_ *cli.ToolsCli) *cobra.Command {
 }
 
 func init() {
+	cobra.MousetrapHelpText = ""
+
 	cobra.OnInitialize(
 		func() {
 			if opts.logDebug {
@@ -68,7 +71,9 @@ func init() {
 		},
 		func() {
 			tCli.WinMowerRegistry = pkg.NewWinMowerRegistry(filepath.Join(cli.ConfigDir(), "winmowers"), tCli.BundleRegistry, tCli.Log)
+
 			tCli.WinMowerRegistry.WithClient(*tCli.Client)
+			tCli.BundleRegistry.WithClient(*tCli.Client)
 		},
 	)
 }
@@ -78,9 +83,8 @@ func Execute() {
 		ReportCaller:    false,
 		ReportTimestamp: false,
 	})
-	client := http.DefaultClient
+	client := &http.Client{}
 	bundleRegistry := pkg.NewBundleRegistry("https://hqvrobotics.azure-api.net")
-	bundleRegistry.WithClient(*client)
 	tCli = &cli.ToolsCli{
 		Log:            logger,
 		BundleRegistry: bundleRegistry,
@@ -92,6 +96,10 @@ func Execute() {
 
 	err := rootCmd.Execute()
 	if err != nil {
+		logger.Error("Error executing command", "err", err)
+		logger.Info("Press enter to exit")
+		var input string
+		fmt.Scan(&input)
 		os.Exit(1)
 	}
 }
@@ -104,6 +112,7 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 		amprod.NewAmProdCommand(toolsCli),
 		config.NewConfigCommand(toolsCli),
 		winmower.NewWinMowerCommand(toolsCli),
+		gsimLaunch.NewGsimWebLaunchCommand(toolsCli),
 	)
 }
 

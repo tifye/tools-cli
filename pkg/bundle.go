@@ -45,7 +45,7 @@ func (r *BundleRegistry) FetchBundleTypes(ctx context.Context) ([]BundleType, er
 		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %v", err)
 	}
@@ -76,7 +76,7 @@ func (r *BundleRegistry) FetchLatestRelease(ctx context.Context, bundleType stri
 		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %v", err)
 	}

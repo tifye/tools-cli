@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-func DownloadAndUnpack(req *http.Request, dest string) error {
-	resp, err := http.DefaultClient.Do(req)
+func DownloadAndUnpack(req *http.Request, client *http.Client, dest string) error {
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Println(err)
 		return err

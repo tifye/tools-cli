@@ -45,7 +45,7 @@ func newStartCommand(tCli *cli.ToolsCli) *cobra.Command {
 }
 
 func runStart(tCli *cli.ToolsCli, opts *startOptions, cmd *cobra.Command) error {
-	winMower, err := tCli.WinMowerRegistry.GetWinMower(opts.platform, cmd.Context())
+	winMower, err := tCli.WinMowerRegistry.DownloadWinMower(opts.platform, cmd.Context())
 	if err != nil {
 		tCli.Log.Error("Error getting winmower", "err", err)
 		return err

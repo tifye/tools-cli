@@ -16,7 +16,7 @@ func newDownloadCommand(tCli *cli.ToolsCli) *cobra.Command {
 		Use:   "download",
 		Short: "Download winmower",
 		Run: func(cmd *cobra.Command, args []string) {
-			winMower, err := tCli.WinMowerRegistry.GetWinMower(opts.platform, cmd.Context())
+			winMower, err := tCli.WinMowerRegistry.DownloadWinMower(opts.platform, cmd.Context())
 			if err != nil {
 				tCli.Log.Error("Error getting winmower", "err", err)
 				return
