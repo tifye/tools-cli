@@ -19,12 +19,15 @@ type startOptions struct {
 	platform pkg.Platform
 	detach   bool
 	showRaw  bool
+	// TODO: Add flag for working directory
 }
 
 type winMowerLogger struct {
 	logger *log.Logger
 }
 
+// TODO: Handle working directories properly
+// by default should be in config folder
 func newStartCommand(tCli *cli.ToolsCli) *cobra.Command {
 	opts := &startOptions{}
 	cmd := &cobra.Command{
@@ -52,6 +55,7 @@ func runStart(tCli *cli.ToolsCli, opts *startOptions, cmd *cobra.Command) error 
 	}
 
 	if opts.detach {
+		tCli.Log.Info("Starting winmower in detached mode", "platform", opts.platform.String(), "raw", opts.showRaw)
 		if opts.showRaw {
 			err = pkg.OpenURL(winMower.Path)
 			if err != nil {
@@ -61,7 +65,7 @@ func runStart(tCli *cli.ToolsCli, opts *startOptions, cmd *cobra.Command) error 
 		} else {
 			err := exec.Command(
 				"cmd", "/c", "start",
-				"tools-cli", "winmower", "start", // FIXME: Instead use location of current executable
+				"tools-cli", "winmower", "start", // TODO: Instead use location of current executable
 				"-p", opts.platform.String(),
 				"--debug").
 				Run()
@@ -76,6 +80,7 @@ func runStart(tCli *cli.ToolsCli, opts *startOptions, cmd *cobra.Command) error 
 	exCmd := exec.CommandContext(cmd.Context(), winMower.Path)
 	exCmd.Dir = filepath.Dir(winMower.Path)
 	exCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: false}
+	exCmd.Stdin = os.Stdin
 
 	if opts.showRaw {
 		exCmd.Stdout = os.Stdout

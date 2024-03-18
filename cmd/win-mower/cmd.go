@@ -17,6 +17,7 @@ func NewWinMowerCommand(tCli *cli.ToolsCli) *cobra.Command {
 	cmd.AddCommand(
 		newDownloadCommand(tCli),
 		newStartCommand(tCli),
+		// TODO: Add list flag
 	)
 
 	return cmd
