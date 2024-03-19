@@ -67,6 +67,7 @@ func init() {
 				return
 			}
 
+			tCli.User = user
 			tCli.Client.Transport = security.NewTifAuthTransport(http.DefaultTransport, user.APIKey, user.AccessToken)
 		},
 		func() {
