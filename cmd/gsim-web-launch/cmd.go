@@ -123,7 +123,7 @@ func runGsimWebLaunch(tCli *cli.ToolsCli, opts gsimWebLaunchOptions) {
 		ReportCaller:    false,
 		ReportTimestamp: true,
 		TimeFormat:      time.TimeOnly,
-		Prefix:          "WinMower",
+		Prefix:          opts.platform.String(),
 	})
 	logger.SetStyles(cli.SubProcessLogStyle("#8b5cf6"))
 	formatter := winmower.NewLogFormatter(logger)
@@ -144,7 +144,7 @@ func runGsimWebLaunch(tCli *cli.ToolsCli, opts gsimWebLaunchOptions) {
 	}()
 
 	time.Sleep(3 * time.Second) // TODO: Wait for winmower to start by spying on its logs
-	tifLogger := logger.WithPrefix("TifConsole.Auto")
+	tifLogger := logger.WithPrefix("GSPacket bundle")
 	tifLogger.SetStyles(cli.SubProcessLogStyle("#3b82f6"))
 	tifLogFormatter := tifconsole.NewLogFormatter(tifLogger)
 	tifConsole := &tifconsole.TifConsole{
@@ -180,7 +180,15 @@ func runGsimWebLaunch(tCli *cli.ToolsCli, opts gsimWebLaunchOptions) {
 		}
 	}()
 
-	tCli.Log.Print("Simulator started")
+	// TODO: Different mowers have different testscripts
+	logger = tifLogger.WithPrefix("Start script")
+	tifLogFormatter = tifconsole.NewLogFormatter(logger)
+	tifConsole.Stdout = tifLogFormatter
+	tifConsole.Stderr = tifLogFormatter
+	err = tifConsole.RunTestBundle(context.Background(), `D:\Projects\_work\GardenTVAutoLoader\GardenTVAutoloader\Resources\testscript.zip`, "-tcpAddress", "127.0.0.1:4250")
+	if err != nil {
+		tCli.Log.Error("Error running test bundle", "err", err)
+	}
 
 	var input string
 	fmt.Println("Press enter to exit...")
