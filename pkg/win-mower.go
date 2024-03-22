@@ -2,12 +2,15 @@ package pkg
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 
+	"github.com/Tifufu/tools-cli/internal/winmower"
 	"github.com/charmbracelet/log"
 )
 
@@ -79,13 +82,27 @@ func (w *WinMowerRegistry) DownloadWinMower(platform Platform, ctx context.Conte
 		return nil, err
 	}
 
-	wmPath, err := locateWinMowerExecutable(dir)
+	index := filepath.Join(dir, "index.json")
+	indexFile, err := os.OpenFile(index, os.O_RDONLY, 0)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening index.json: %v", err)
+	}
+	defer func() {
+		closeErr := indexFile.Close()
+		if closeErr != nil {
+			w.logger.Error("error closing index.json", "err", err)
+		}
+	}()
+
+	decoder := json.NewDecoder(indexFile)
+	var manifest winmower.Manifest
+	err = decoder.Decode(&manifest)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding index.json: %v", err)
 	}
 
 	return &WinMower{
-		Path: wmPath,
+		Path: filepath.Join(dir, manifest.Metadata.UniqueDescriptiveName+".exe"),
 	}, nil
 }
 
@@ -108,27 +125,26 @@ func (w *WinMowerRegistry) GetCachedWinMower(platform Platform, ctx context.Cont
 		return nil, nil
 	}
 
-	path, err := locateWinMowerExecutable(wmDir)
+	index := filepath.Join(wmDir, "index.json")
+	indexFile, err := os.OpenFile(index, os.O_RDONLY, 0)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening index.json: %v", err)
+	}
+	defer func() {
+		closeErr := indexFile.Close()
+		if closeErr != nil {
+			w.logger.Error("error closing index.json", "err", err)
+		}
+	}()
+
+	decoder := json.NewDecoder(indexFile)
+	var manifest winmower.Manifest
+	err = decoder.Decode(&manifest)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding index.json: %v", err)
 	}
 
 	return &WinMower{
-		Path: path,
+		Path: filepath.Join(wmDir, manifest.Metadata.UniqueDescriptiveName+".exe"),
 	}, nil
-}
-
-func locateWinMowerExecutable(dir string) (string, error) {
-	var exePath string
-	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		if filepath.Ext(path) == ".exe" {
-			exePath = path
-			return nil
-		}
-		return nil
-	})
-	if exePath == "" {
-		return "", fmt.Errorf("no exe found in %s", dir)
-	}
-	return exePath, err
 }
