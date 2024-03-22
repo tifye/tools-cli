@@ -83,22 +83,9 @@ func (w *WinMowerRegistry) DownloadWinMower(platform Platform, ctx context.Conte
 	}
 
 	index := filepath.Join(dir, "index.json")
-	indexFile, err := os.OpenFile(index, os.O_RDONLY, 0)
+	manifest, err := decodeManifest(index, w.logger)
 	if err != nil {
-		return nil, fmt.Errorf("error opening index.json: %v", err)
-	}
-	defer func() {
-		closeErr := indexFile.Close()
-		if closeErr != nil {
-			w.logger.Error("error closing index.json", "err", err)
-		}
-	}()
-
-	decoder := json.NewDecoder(indexFile)
-	var manifest winmower.Manifest
-	err = decoder.Decode(&manifest)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding index.json: %v", err)
+		return nil, err
 	}
 
 	return &WinMower{
@@ -126,25 +113,37 @@ func (w *WinMowerRegistry) GetCachedWinMower(platform Platform, ctx context.Cont
 	}
 
 	index := filepath.Join(wmDir, "index.json")
-	indexFile, err := os.OpenFile(index, os.O_RDONLY, 0)
+	manifest, err := decodeManifest(index, w.logger)
 	if err != nil {
-		return nil, fmt.Errorf("error opening index.json: %v", err)
-	}
-	defer func() {
-		closeErr := indexFile.Close()
-		if closeErr != nil {
-			w.logger.Error("error closing index.json", "err", err)
-		}
-	}()
-
-	decoder := json.NewDecoder(indexFile)
-	var manifest winmower.Manifest
-	err = decoder.Decode(&manifest)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding index.json: %v", err)
+		return nil, err
 	}
 
 	return &WinMower{
 		Path: filepath.Join(wmDir, manifest.Metadata.UniqueDescriptiveName+".exe"),
 	}, nil
+}
+
+func decodeManifest(path string, logger *log.Logger) (manifest winmower.Manifest, err error) {
+	indexFile, err := os.OpenFile(path, os.O_RDONLY, 0)
+	if err != nil {
+		return winmower.Manifest{}, fmt.Errorf("error opening index.json: %v", err)
+	}
+	defer func() {
+		closeErr := indexFile.Close()
+		if closeErr != nil {
+			if err == nil {
+				err = fmt.Errorf("error closing index.json: %w", closeErr)
+				return
+			}
+			logger.Error("error closing index.json", "err", err)
+		}
+	}()
+
+	decoder := json.NewDecoder(indexFile)
+	err = decoder.Decode(&manifest)
+	if err != nil {
+		return winmower.Manifest{}, fmt.Errorf("error decoding index.json: %v", err)
+	}
+
+	return manifest, nil
 }

@@ -185,7 +185,7 @@ func runGsimWebLaunch(tCli *cli.ToolsCli, opts gsimWebLaunchOptions) {
 	tifLogFormatter = tifconsole.NewLogFormatter(logger)
 	tifConsole.Stdout = tifLogFormatter
 	tifConsole.Stderr = tifLogFormatter
-	err = tifConsole.RunTestBundle(context.Background(), `C:\Repositories\_other\tools-cli\assets\testscript.zip`, "-tcpAddress", "127.0.0.1:4250")
+	err = tifConsole.RunTestBundle(context.Background(), `D:\Projects\_work\_pocs\tools-cli\assets\testscript.zip`, "-tcpAddress", "127.0.0.1:4250")
 	if err != nil {
 		tCli.Log.Error("Error running test bundle", "err", err)
 	}
