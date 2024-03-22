@@ -94,7 +94,7 @@ func locateGSPPaths(dir string, serialNumber uint) (*GSPacketMetadata, error) {
 		return nil, err
 	}
 	if gspPaths.Map == "" || gspPaths.TestBundle == "" {
-		return nil, errors.New("Failed to locate GSP paths")
+		return nil, errors.New("failed to locate GSP paths")
 	}
 
 	return gspPaths, nil
