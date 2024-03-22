@@ -22,6 +22,7 @@ type gsimWebLaunchOptions struct {
 	serialNumber   uint
 	platform       pkg.Platform
 	tifConsolePath string
+	detach         bool
 }
 
 func NewGsimWebLaunchCommand(tCli *cli.ToolsCli) *cobra.Command {
@@ -44,6 +45,26 @@ func NewGsimWebLaunchCommand(tCli *cli.ToolsCli) *cobra.Command {
 			tCli.Log.Debug("Using default tifConsolePath", "tifConsolePath", opts.tifConsolePath)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			if opts.detach {
+				exePath, err := os.Executable()
+				if err != nil {
+					tCli.Log.Error("Error getting executable path", "err", err)
+					return
+				}
+
+				err = exec.Command(
+					"cmd", "/c", "start",
+					exePath, "gsim-web-launch", args[0],
+					"--tif-console", opts.tifConsolePath,
+					"--debug").
+					Run()
+				if err != nil {
+					tCli.Log.Error("Error detaching process", "err", err)
+					return
+				}
+				return
+			}
+
 			defer func() {
 				var input string
 				fmt.Println("Press enter to exit...")
@@ -83,6 +104,8 @@ func NewGsimWebLaunchCommand(tCli *cli.ToolsCli) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.tifConsolePath, "tif-console", "", "Path to TifConsole.Auto.exe")
 	cmd.MarkFlagFilename("tif-console", "exe")
+
+	cmd.Flags().BoolVar(&opts.detach, "detach", false, "Detach the process")
 
 	cmd.AddCommand(newUpdateRegistryCommand(tCli))
 
