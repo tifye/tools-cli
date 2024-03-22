@@ -65,12 +65,6 @@ func NewGsimWebLaunchCommand(tCli *cli.ToolsCli) *cobra.Command {
 				return
 			}
 
-			defer func() {
-				var input string
-				fmt.Println("Press enter to exit...")
-				fmt.Scanln(&input)
-			}()
-
 			if len(args) == 0 {
 				tCli.Log.Error("Excepted args: {serialNumber}/{platform}")
 				return
