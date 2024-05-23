@@ -37,7 +37,12 @@ func newOpenCommand(tCli *cli.ToolsCli) *cobra.Command {
 			for {
 				select {
 				case rawPacket := <-device.PacketChan:
-					tCli.Log.Info("Received packet", "data", rawPacket)
+					packet, err := automower.ParsePacket(rawPacket)
+					if err != nil {
+						tCli.Log.Error("Error parsing packet", "err", err)
+						continue
+					}
+					tCli.Log.Print("Received packet", "header", packet.Header, "payloadData", packet.Payload)
 				case err := <-device.ErrChan:
 					tCli.Log.Error("Error on device", "err", err)
 					return
