@@ -11,6 +11,7 @@ import (
 	"github.com/Tifufu/tools-cli/cmd/amprod"
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/cmd/config"
+	"github.com/Tifufu/tools-cli/cmd/device"
 	gsimLaunch "github.com/Tifufu/tools-cli/cmd/gsim-web-launch"
 	"github.com/Tifufu/tools-cli/cmd/profile"
 	"github.com/Tifufu/tools-cli/cmd/sites"
@@ -114,6 +115,7 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 		config.NewConfigCommand(toolsCli),
 		winmower.NewWinMowerCommand(toolsCli),
 		gsimLaunch.NewGsimWebLaunchCommand(toolsCli),
+		device.NewDeviceCommand(toolsCli),
 	)
 }
 
