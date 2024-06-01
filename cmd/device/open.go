@@ -8,7 +8,7 @@ import (
 
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/internal/automower"
-	"github.com/Tifufu/tools-cli/internal/protocol"
+	"github.com/Tifufu/tools-cli/internal/protocol/linking"
 	"github.com/spf13/cobra"
 )
 
@@ -44,16 +44,16 @@ func newOpenCommand(tCli *cli.ToolsCli) *cobra.Command {
 					}
 
 					switch rawPacket[0] {
-					case protocol.BroadcastPacketType:
-						packet, payload, err := protocol.ParseBroadcastPacket(rawPacket)
+					case linking.BroadcastPacketType:
+						packet, payload, err := linking.ParseBroadcastPacket(rawPacket)
 						if err != nil {
 							tCli.Log.Error("Error parsing packet", "err", err)
 							continue
 						}
 
 						tCli.Log.Info("Parsed broadcast packet", "channel", packet.BroadcastChannel, "control", packet.Control, "payloadSize", len(payload), "senderId", packet.SenderId, "familyId", packet.MessageFamily)
-					case protocol.LinkedPacketType:
-						packet, payload, err := protocol.ParseLinkedPacket(rawPacket)
+					case linking.LinkedPacketType:
+						packet, payload, err := linking.ParseLinkedPacket(rawPacket)
 						if err != nil {
 							tCli.Log.Error("Error parsing packet", "err", err)
 							continue
@@ -61,7 +61,7 @@ func newOpenCommand(tCli *cli.ToolsCli) *cobra.Command {
 
 						tCli.Log.Info("Parsed linked packet", "linkId", packet.LinkId, "control", packet.Control, "payloadSize", len(payload))
 					default:
-						tCli.Log.Debug("Skipping packet, neither linked or broadcast packet", "packet", protocol.Payload(rawPacket).String())
+						tCli.Log.Debug("Skipping packet, neither linked or broadcast packet", "packet", linking.Payload(rawPacket).String())
 					}
 				case err := <-device.ErrChan:
 					tCli.Log.Error("Error on device", "err", err)
