@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/internal/automower"
@@ -35,41 +36,20 @@ func newOpenCommand(tCli *cli.ToolsCli) *cobra.Command {
 			device := automower.NewDevice(conn, ctx)
 			defer device.Close()
 
-			device.Write([]byte{0x02, 0xFD, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63, 0x12, 0x8E, 0x8C, 0x0D, 0x2B, 0x60, 0x03})
-			for {
-				select {
-				case rawPacket := <-device.PacketChan:
-					if len(rawPacket) <= 0 {
-						continue
-					}
-
-					switch rawPacket[0] {
-					case linking.BroadcastPacketType:
-						packet, payload, err := linking.ParseBroadcastPacket(rawPacket)
-						if err != nil {
-							tCli.Log.Error("Error parsing packet", "err", err)
-							continue
-						}
-
-						tCli.Log.Info("Parsed broadcast packet", "channel", packet.BroadcastChannel, "control", packet.Control, "payloadSize", len(payload), "senderId", packet.SenderId, "familyId", packet.MessageFamily)
-					case linking.LinkedPacketType:
-						packet, payload, err := linking.ParseLinkedPacket(rawPacket)
-						if err != nil {
-							tCli.Log.Error("Error parsing packet", "err", err)
-							continue
-						}
-
-						tCli.Log.Info("Parsed linked packet", "linkId", packet.LinkId, "control", packet.Control, "payloadSize", len(payload))
-					default:
-						tCli.Log.Debug("Skipping packet, neither linked or broadcast packet", "packet", linking.Payload(rawPacket).String())
-					}
-				case err := <-device.ErrChan:
-					tCli.Log.Error("Error on device", "err", err)
-					return
-				case <-ctx.Done():
-					return
+			linkHost := linking.NewLinkHost(device, tCli.Log)
+			go func() {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				if err := linkHost.Start(timeoutCtx); err != nil {
+					tCli.Log.Fatal("Link host error", "err", err)
 				}
-			}
+			}()
+
+			//device.Write([]byte{0x02, 0xFD, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63, 0x12, 0x8E, 0x8C, 0x0D, 0x2B, 0x60, 0x03})
+
+			<-ctx.Done()
+
+			linkHost.Stop()
 		},
 	}
 
