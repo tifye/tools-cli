@@ -8,21 +8,21 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-type LinkHost struct {
+type LinkMux struct {
 	stopChan chan struct{}
 	device   *automower.Device
 	logger   *log.Logger
 }
 
-func NewLinkHost(device *automower.Device, logger *log.Logger) *LinkHost {
-	return &LinkHost{
+func NewLinkHost(device *automower.Device, logger *log.Logger) *LinkMux {
+	return &LinkMux{
 		device:   device,
 		logger:   logger,
 		stopChan: make(chan struct{}, 1),
 	}
 }
 
-func (lh *LinkHost) Start(ctx context.Context) error {
+func (lh *LinkMux) Start(ctx context.Context) error {
 	for {
 		select {
 		case rawPacket := <-lh.device.PacketChan:
@@ -43,12 +43,12 @@ func (lh *LinkHost) Start(ctx context.Context) error {
 	}
 }
 
-func (lh *LinkHost) Stop() error {
+func (lh *LinkMux) Stop() error {
 	lh.stopChan <- struct{}{}
 	return nil
 }
 
-func (lh *LinkHost) routePacket(ctx context.Context, rawPacket []byte) {
+func (lh *LinkMux) routePacket(ctx context.Context, rawPacket []byte) {
 	switch rawPacket[0] {
 	case BroadcastPacketType:
 		packet, payload, err := ParseBroadcastPacket(rawPacket)
