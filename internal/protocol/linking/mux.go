@@ -106,7 +106,7 @@ func (lh *LinkMux) routePacket(_ context.Context, rawPacket []byte) {
 			return
 		}
 
-		lh.logger.Info("Parsed broadcast packet", "channel", packet.BroadcastChannel, "control", packet.Control, "payloadSize", len(payload), "senderId", packet.SenderId, "familyId", packet.MessageFamily)
+		lh.logger.Debug("Parsed broadcast packet", "channel", packet.BroadcastChannel, "control", packet.Control, "payloadSize", len(payload), "senderId", packet.SenderId, "familyId", packet.MessageFamily)
 	case LinkedPacketType:
 		packet, err := parseLinkedPacket(rawPacket)
 		if err != nil {
@@ -114,7 +114,7 @@ func (lh *LinkMux) routePacket(_ context.Context, rawPacket []byte) {
 			return
 		}
 
-		lh.logger.Info("Parsed linked packet", "linkId", packet.LinkId, "control", packet.Control, "payloadSize", len(packet.Payload))
+		lh.logger.Debug("Parsed linked packet", "linkId", packet.LinkId, "control", packet.Control, "payloadSize", len(packet.Payload))
 	default:
 		lh.logger.Debug("Skipping packet, neither linked or broadcast packet", "packet", Payload(rawPacket).String())
 	}
