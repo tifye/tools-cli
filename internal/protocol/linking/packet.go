@@ -10,12 +10,22 @@ import (
 )
 
 const (
+	RoboticsProtocol1 byte = 0x00
+	RoboticsProtocol2 byte = 0x01
+
+	PacketStart byte = 0x02
+	PacketEnd   byte = 0x03
+
 	LinkedPacketType    byte = 0xFD
 	BroadcastPacketType byte = 0xFC
 
+	ControlLinkManagerCommand byte = 0x00
+	ControlPayloadCommand     byte = 0x01
+
 	// Size of frame in bytes = Header+Footer.
 	linkedPacketFrameSize int = 10
-	broadcastFrameSize    int = 10
+	// Size of frame in bytes = Header+Footer.
+	broadcastFrameSize int = 10
 )
 
 var (
@@ -39,7 +49,7 @@ func (p Payload) String() string {
 }
 
 // https://confluence-husqvarna.riada.se/pages/viewpage.action?pageId=59116753
-type LinkedPacket struct {
+type linkedPacket struct {
 	// Packet type. Should always be 0xFD.
 	PacketType byte
 
@@ -52,7 +62,7 @@ type LinkedPacket struct {
 	// When a link is created, a random number is generated.
 	//
 	// Link id 0 (Zero) means local node, i.e. the packet shall not be routed.
-	LinkId uint32
+	LinkId LinkId
 
 	// The Control byte decides if this packet contains a link manager command, or if it contains payload data.
 	//
@@ -71,47 +81,85 @@ type LinkedPacket struct {
 	// Calculated starting on PacketType and ending on (including) Control.
 	HeaderCrc byte
 
+	Payload Payload
+
 	// Checksum that is used to verify the integrity of the packet.
 	// The checksum calculation starts after the sync word and runs until the end of the payload.
 	FooterCrc byte
 }
 
+func NewLinkedPacket(
+	packetType byte,
+	length uint16,
+	linkId LinkId,
+	control byte,
+	headerCrc byte,
+	payload Payload,
+	footerCrc byte,
+) linkedPacket {
+	return linkedPacket{
+		PacketType: packetType,
+		Length:     length,
+		LinkId:     linkId,
+		Control:    control,
+		HeaderCrc:  headerCrc,
+		Payload:    payload,
+		FooterCrc:  footerCrc,
+	}
+}
+
+func marshallLinkedPacket(lp linkedPacket, buf []byte) error {
+	if len(buf) < len(lp.Payload)+linkedPacketFrameSize {
+		return fmt.Errorf("not enough space in buf for linked packet; buf len %v", len(buf))
+	}
+
+	buf[0] = lp.PacketType
+	binary.LittleEndian.PutUint16(buf[1:3], lp.Length)
+	binary.LittleEndian.PutUint32(buf[3:7], uint32(lp.LinkId))
+	copy(buf[7:9], []byte{lp.Control, lp.HeaderCrc})
+	copy(buf[9:], lp.Payload)
+	buf[len(buf)-1] = lp.FooterCrc
+
+	return nil
+}
+
 // todo: Check heap allocations of this function
-func ParseLinkedPacket(data []byte) (packet LinkedPacket, payload Payload, err error) {
+func parseLinkedPacket(data []byte) (packet linkedPacket, err error) {
 	if len(data) < linkedPacketFrameSize {
-		return LinkedPacket{}, nil, fmt.Errorf("malformed packet, not enough bytes for header+footer")
+		return linkedPacket{}, fmt.Errorf("malformed packet, not enough bytes for header+footer")
 	}
 
 	buff := bytes.NewBuffer(data)
 
 	packetType, _ := buff.ReadByte()
 	if packetType != LinkedPacketType {
-		return packet, payload, fmt.Errorf("invalid packet type, expected LinkedPacket %b but got %b", LinkedPacketType, packetType)
+		return packet, fmt.Errorf("invalid packet type, expected LinkedPacket %b but got %b", LinkedPacketType, packetType)
 	}
 
 	packetLength := binary.LittleEndian.Uint16(buff.Next(2))
 	if buff.Len() != int(packetLength)-1 {
-		return packet, payload, fmt.Errorf("malformed packet, length header (%d) does not match size of data (%d - end-of-packet)", buff.Len(), packetLength)
+		return packet, fmt.Errorf("malformed packet, length header (%d) does not match size of data (%d - end-of-packet)", buff.Len(), packetLength)
 	}
 
 	linkId := binary.LittleEndian.Uint32(buff.Next(4))
 	control, _ := buff.ReadByte()
 	headerCrc, _ := buff.ReadByte()
-	payload = buff.Next(buff.Len() - 1) // - 1 byte for footerCrc
+	payload := buff.Next(buff.Len() - 1) // - 1 byte for footerCrc
 	footerCrc, _ := buff.ReadByte()
 
-	packet = LinkedPacket{
+	packet = linkedPacket{
 		PacketType: packetType,
 		Length:     packetLength,
-		LinkId:     linkId,
+		LinkId:     LinkId(linkId),
 		Control:    control,
 		HeaderCrc:  headerCrc,
+		Payload:    payload,
 		FooterCrc:  footerCrc,
 	}
-	return packet, payload, nil
+	return packet, nil
 }
 
-type BroadcastPacket struct {
+type broadcastPacketFrame struct {
 	// Packet type. Should always be 0xFC.
 	PacketType byte
 
@@ -156,9 +204,9 @@ type BroadcastPacket struct {
 	FooterCrc byte
 }
 
-func ParseBroadcastPacket(data []byte) (packet BroadcastPacket, payload Payload, err error) {
+func parseBroadcastPacket(data []byte) (packet broadcastPacketFrame, payload Payload, err error) {
 	if len(data) < linkedPacketFrameSize {
-		return BroadcastPacket{}, nil, fmt.Errorf("malformed packet, not enough bytes for header+footer")
+		return broadcastPacketFrame{}, nil, fmt.Errorf("malformed packet, not enough bytes for header+footer")
 	}
 
 	buff := bytes.NewBuffer(data)
@@ -181,7 +229,7 @@ func ParseBroadcastPacket(data []byte) (packet BroadcastPacket, payload Payload,
 	payload = buff.Next(buff.Len() - 1) // - 1 byte for footerCrc
 	footerCrc, _ := buff.ReadByte()
 
-	packet = BroadcastPacket{
+	packet = broadcastPacketFrame{
 		PacketType:       packetType,
 		Length:           packetLength,
 		MessageFamily:    messageFamily,
@@ -192,9 +240,4 @@ func ParseBroadcastPacket(data []byte) (packet BroadcastPacket, payload Payload,
 		FooterCrc:        footerCrc,
 	}
 	return packet, payload, nil
-}
-
-type LinkCommand struct {
-	MessageId  byte
-	Parameters Payload
 }

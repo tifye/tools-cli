@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/Tifufu/tools-cli/cmd/cli"
 	"github.com/Tifufu/tools-cli/internal/automower"
@@ -36,20 +35,16 @@ func newOpenCommand(tCli *cli.ToolsCli) *cobra.Command {
 			device := automower.NewDevice(conn, ctx)
 			defer device.Close()
 
-			linkHost := linking.NewLinkHost(device, tCli.Log)
+			linkMux := linking.NewLinkMux(device, tCli.Log)
 			go func() {
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-				defer cancel()
-				if err := linkHost.Start(timeoutCtx); err != nil {
+				err := linkMux.Start()
+				if err != nil && err != linking.ErrLinkMuxShuttingDown {
 					tCli.Log.Fatal("Link host error", "err", err)
 				}
 			}()
 
-			//device.Write([]byte{0x02, 0xFD, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63, 0x12, 0x8E, 0x8C, 0x0D, 0x2B, 0x60, 0x03})
-
 			<-ctx.Done()
-
-			linkHost.Stop()
+			linkMux.Stop()
 		},
 	}
 
