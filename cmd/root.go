@@ -15,6 +15,7 @@ import (
 	gsimLaunch "github.com/Tifufu/tools-cli/cmd/gsim-web-launch"
 	"github.com/Tifufu/tools-cli/cmd/profile"
 	"github.com/Tifufu/tools-cli/cmd/sites"
+	tifdefinition "github.com/Tifufu/tools-cli/cmd/tif-definition"
 	winmower "github.com/Tifufu/tools-cli/cmd/win-mower"
 	"github.com/Tifufu/tools-cli/pkg"
 	"github.com/Tifufu/tools-cli/pkg/security"
@@ -99,9 +100,6 @@ func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
 		logger.Error("Error executing command", "err", err)
-		logger.Info("Press enter to exit")
-		var input string
-		fmt.Scan(&input)
 		os.Exit(1)
 	}
 }
@@ -116,6 +114,7 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 		winmower.NewWinMowerCommand(toolsCli),
 		gsimLaunch.NewGsimWebLaunchCommand(toolsCli),
 		device.NewDeviceCommand(toolsCli),
+		tifdefinition.NewTifDefinitionCommand(toolsCli),
 	)
 }
 
