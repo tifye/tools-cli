@@ -25,7 +25,7 @@ const (
 	// Size of frame in bytes = Header+Footer.
 	linkedPacketFrameSize int = 10
 	// Size of frame in bytes = Header+Footer.
-	broadcastFrameSize int = 10
+	// broadcastFrameSize int = 10
 )
 
 var (
