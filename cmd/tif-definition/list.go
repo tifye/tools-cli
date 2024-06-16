@@ -15,6 +15,7 @@ import (
 type listOptions struct {
 	filepath     string
 	familyFilter string
+	nameFilter   string
 }
 
 func newListCommand(tCli *cli.ToolsCli) *cobra.Command {
@@ -36,6 +37,7 @@ func newListCommand(tCli *cli.ToolsCli) *cobra.Command {
 	cmd.MarkFlagFilename("file", "json")
 
 	cmd.Flags().StringVarP(&opts.familyFilter, "family", "f", "", "Family to filter output by")
+	cmd.Flags().StringVarP(&opts.nameFilter, "name", "n", "", "Attribute name to filter output by")
 
 	return cmd
 }
@@ -70,12 +72,24 @@ func runList(logger *log.Logger, opts listOptions) error {
 		methodIdmap[key] = method
 	}
 
+	filterFamily, filterName := opts.familyFilter != "", opts.nameFilter != ""
 	for _, attr := range def.AttributesV2 {
-		if opts.familyFilter != "" && attr.Family != opts.familyFilter {
+		if filterFamily && attr.Family != opts.familyFilter {
+			continue
+		}
+
+		if filterName && attr.Name != opts.nameFilter {
 			continue
 		}
 
 		fmt.Printf("%s.%s, %s\n", attr.Family, attr.Name, attr.Description)
+		if cmd, ok := attr.ReadCommand(); ok {
+			fmt.Printf("  %s\n", cmd)
+		}
+		if cmd, ok := attr.WriteCommand(); ok {
+			fmt.Printf("  %s\n", cmd)
+		}
+		fmt.Println()
 	}
 	return nil
 }

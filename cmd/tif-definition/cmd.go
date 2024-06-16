@@ -16,6 +16,7 @@ func NewTifDefinitionCommand(tCli *cli.ToolsCli) *cobra.Command {
 
 	cmd.AddCommand(
 		newListCommand(tCli),
+		newTestCommand(tCli),
 	)
 
 	return cmd
