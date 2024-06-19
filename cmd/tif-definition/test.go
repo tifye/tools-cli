@@ -73,7 +73,7 @@ func runTest(logger *log.Logger, opts testOptions) error {
 	logger.Debugf("tif-definition decode took %dms", time.Since(start).Milliseconds())
 
 	// Dear lord, help the person who has to debug this in the future, Amen.
-	re, _ := regexp.Compile(`([A-Za-z]+\.[A-Za-z]+\((\s*[A-Za-z]+\s*\:\s*[A-Za-z0-9]+\s*,?\s*)*\))`)
+	re, _ := regexp.Compile(`([A-Za-z0-9]+\.[A-Za-z0-9]+\((\s*[A-Za-z0-9]+\s*\:\s*[A-Za-z0-9]+\s*,?\s*)*\))`)
 	if !re.MatchString(opts.command) {
 		return fmt.Errorf("malformed command; expected format Family.Command(param: value), got: %s", opts.command)
 	}
