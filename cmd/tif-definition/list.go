@@ -33,8 +33,8 @@ func newListCommand(tCli *cli.ToolsCli) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&opts.filepath, "def", "d", "", "Path to the tif definition file")
-	cmd.MarkFlagRequired("file")
-	cmd.MarkFlagFilename("file", "json")
+	cmd.MarkFlagRequired("def")
+	cmd.MarkFlagFilename("def", "json")
 
 	cmd.Flags().StringVarP(&opts.familyFilter, "family", "f", "", "Family to filter output by")
 	cmd.Flags().StringVarP(&opts.nameFilter, "name", "n", "", "Attribute name to filter output by")
