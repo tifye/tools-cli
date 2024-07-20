@@ -11,16 +11,6 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-type LinkId uint32
-
-type Link struct {
-	id LinkId
-}
-
-func (l Link) Id() LinkId {
-	return l.id
-}
-
 const (
 	DefaultLinkId LinkId = 0
 )
@@ -36,25 +26,29 @@ type LinkMux struct {
 	writeChan  chan []byte
 
 	linkIdCounter atomic.Uint32
-	defaultLink   *Link
+	DefaultLink   *Link
 }
 
 func NewLinkMux(device *automower.Device, logger *log.Logger) *LinkMux {
-	return &LinkMux{
+	mux := &LinkMux{
 		device:        device,
 		logger:        logger,
 		writeChan:     make(chan []byte),
 		inShutdown:    atomic.Bool{},
 		linkIdCounter: atomic.Uint32{},
-		defaultLink:   &Link{id: 0},
 	}
+	mux.DefaultLink = &Link{
+		id:     DefaultLinkId,
+		writer: mux,
+	}
+	return mux
 }
 
 func (lh *LinkMux) Start() error {
 	go func() {
 		err := writeWorker(lh.writeChan, lh.device)
 		if err != nil {
-			lh.logger.Error("err is writer worker", "err", err)
+			lh.logger.Error("err from writer worker", "err", err)
 		}
 	}()
 
@@ -67,7 +61,7 @@ func (lh *LinkMux) Start() error {
 			return err
 		}
 
-		go lh.routePacket(context.Background(), rawPacket)
+		go lh.routePacket(context.TODO(), rawPacket)
 	}
 }
 
@@ -80,7 +74,7 @@ func (lh *LinkMux) Stop() error {
 
 func (lh *LinkMux) Write(data []byte) (n int, err error) {
 	lh.writeChan <- data
-	lh.logger.Debug("writing to device", "data", data)
+	lh.logger.Debug("writing to device", "data", Payload(data))
 	return len(data), nil
 }
 
@@ -91,6 +85,7 @@ func (lh *LinkMux) shuttingDown() bool {
 func (lh *LinkMux) readFromDevice() (rawPacket []byte, err error) {
 	select {
 	case rawPacket = <-lh.device.PacketChan:
+		lh.logger.Debug("received from device", "packet", Payload(rawPacket).String())
 		return rawPacket, nil
 	case err = <-lh.device.ErrChan:
 		return nil, err
@@ -114,7 +109,7 @@ func (lh *LinkMux) routePacket(_ context.Context, rawPacket []byte) {
 			return
 		}
 
-		lh.logger.Debug("Parsed linked packet", "linkId", packet.LinkId, "control", packet.Control, "payloadSize", len(packet.Payload))
+		lh.logger.Debug("Parsed linked packet", "linkId", packet.LinkId, "control", packet.Control, "payloadSize", len(packet.Payload), "payload", Payload(packet.Payload).String())
 	default:
 		lh.logger.Debug("Skipping packet, neither linked or broadcast packet", "packet", Payload(rawPacket).String())
 	}
@@ -127,7 +122,7 @@ func writeWorker(input <-chan []byte, out io.Writer) error {
 			return err
 		}
 		if n != len(data) {
-			return fmt.Errorf("was unable to write entire data expected to write %d bytes but wrote %d bytes", len(data), n)
+			return fmt.Errorf("was unable to write entire data, expected to write %d bytes but only wrote %d bytes", len(data), n)
 		}
 	}
 	return nil

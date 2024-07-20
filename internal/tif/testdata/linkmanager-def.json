@@ -1,0 +1,117 @@
+{
+  "methods": [
+    {
+      "command": "Connect",
+      "family": "LinkManager",
+      "inParams": [
+        { "name": "linkId", "type": "uint32" },
+        { "name": "nodeType", "type": "uint32" },
+        { "name": "name", "type": "ascii", "length": 0 }
+      ],
+      "outParams": [
+        { "name": "responseId", "type": "uint8" },
+        { "name": "newLinkId", "type": "uint32" }
+      ],
+      "protocol": [
+        { "key": "linked", "value": "true" },
+        { "key": "requestId", "value": 20 },
+        { "key": "responseId", "value": 21 }
+      ]
+    },
+    {
+      "command": "Ping",
+      "family": "LinkManager",
+      "inParams": [],
+      "outParams": [],
+      "protocol": [
+        { "key": "linked", "value": "true" },
+        { "key": "requestId", "value": 22 },
+        { "key": "responseId", "value": 23 }
+      ]
+    },
+    {
+      "command": "GetVersionString",
+      "family": "LinkManager",
+      "inParams": [],
+      "outParams": [{ "name": "versionString", "type": "ascii", "lengt": 0 }],
+      "protocol": [
+        { "key": "linked", "value": "false" },
+        { "key": "msgType", "value": "96" },
+        { "key": "subCmd", "value": "0" }
+      ]
+    },
+    {
+      "command": "Discover",
+      "family": "LinkManager",
+      "inParams": [{ "name": "tracebackId", "type": "uint32" }],
+      "outParams": [
+        { "name": "responseId", "type": "uint8" },
+        { "name": "tracebackId", "type": "uint32" },
+        { "name": "nodeType", "type": "uint32" },
+        { "name": "nodeName", "type": "ascii", "lengt ": 0 }
+      ],
+      "protocol": [
+        { "key": "linked", "value": "true" },
+        { "key": "requestId", "value": 18 },
+        { "key": "responseId", "value": 19 }
+      ]
+    },
+    {
+      "command": "DeleteLink",
+      "family": "LinkManager",
+      "inParams": [{ "name": "linkId", "type": "uint32" }],
+      "outParams": [
+        { "name": "result", "type": "uint8" },
+        { "name": "deleteLinkId", "type": "uint32" }
+      ],
+      "protocol": [
+        { "key": "linked", "value": "true" },
+        { "key": "requestId", "value": 2 },
+        { "key": "responseId", "value": 3 }
+      ]
+    },
+    {
+      "command": "SetProtocol",
+      "family": "LinkManager",
+      "inParams": [{ "name": "protocol", "type": "uint8" }],
+      "outParams": [
+        { "name": "responseId", "type": "uint8" },
+        { "name": "result", "type": "uint8" },
+        { "name": "protocol", "type": "uint8" }
+      ],
+      "protocol": [
+        { "key": "linked", "value": "true" },
+        { "key": "requestId", "value": 8 },
+        { "key": "responseId", "value": 9 }
+      ]
+    },
+    {
+      "elementType": "function",
+      "family": "LinkManager",
+      "command": "GetNodeName",
+      "inParams": [],
+      "outParams": [{ "name": "nodeName", "type": "ascii", "length": "-1" }],
+      "protocol": [
+        { "key": "msgType", "value": "96" },
+        { "key": "subCmd", "value": "10" }
+      ]
+    },
+    {
+      "command": "CreateLinkReq",
+      "family": "LinkManager",
+      "inParams": [
+        { "name": "result", "type": "uint8" },
+        { "name": "newLinkId", "type": "uint32" }
+      ],
+      "outParams": [
+        { "name": "messageId", "type": "uint8" },
+        { "name": "newLinkId", "type": "uint32" }
+      ],
+      "protocol": [
+        { "key": "linked", "value": "true" },
+        { "key": "requestId", "value": 1 },
+        { "key": "responseId", "value": 0 }
+      ]
+    }
+  ]
+}

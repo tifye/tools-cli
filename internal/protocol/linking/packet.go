@@ -23,10 +23,18 @@ const (
 	ControlPayloadCommand     byte = 0x01
 
 	// Size of frame in bytes = Header+Footer.
-	linkedPacketFrameSize int = 10
-	// Size of frame in bytes = Header+Footer.
 	// broadcastFrameSize int = 10
+	packetTypeSize = 1
+	lengthSize     = 2
+	linkIdSize     = 4
+	controlSize    = 1
+	headerCrcSize  = 1
+	footerCrcSize  = 1
 )
+
+func linkedPacketSize(payloadSize int) int {
+	return packetTypeSize + lengthSize + linkIdSize + controlSize + headerCrcSize + payloadSize + footerCrcSize
+}
 
 var (
 	ErrUnkownPacketType = errors.New("unknown packet type")
@@ -109,7 +117,7 @@ func NewLinkedPacket(
 }
 
 func marshallLinkedPacket(lp linkedPacket, buf []byte) error {
-	if len(buf) < len(lp.Payload)+linkedPacketFrameSize {
+	if len(buf) < linkedPacketSize(len(lp.Payload)) {
 		return fmt.Errorf("not enough space in buf for linked packet; buf len %v", len(buf))
 	}
 
@@ -125,7 +133,7 @@ func marshallLinkedPacket(lp linkedPacket, buf []byte) error {
 
 // todo: Check heap allocations of this function
 func parseLinkedPacket(data []byte) (packet linkedPacket, err error) {
-	if len(data) < linkedPacketFrameSize {
+	if len(data) < linkedPacketSize(0) {
 		return linkedPacket{}, fmt.Errorf("malformed packet, not enough bytes for header+footer")
 	}
 
@@ -205,7 +213,7 @@ type broadcastPacketFrame struct {
 }
 
 func parseBroadcastPacket(data []byte) (packet broadcastPacketFrame, payload Payload, err error) {
-	if len(data) < linkedPacketFrameSize {
+	if len(data) < linkedPacketSize(0) {
 		return broadcastPacketFrame{}, nil, fmt.Errorf("malformed packet, not enough bytes for header+footer")
 	}
 

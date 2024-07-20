@@ -89,13 +89,13 @@ func runTest(logger *log.Logger, opts testOptions) error {
 		return fmt.Errorf("failed to decode family, malformed command; expected format Family.Command(param: name), got: %s", opts.command)
 	}
 
+	logger.Debug("decomposed command", "family", family, "command", command, "arguments", argumentsStr)
+
 	methods := make(map[string]tif.MethodDefinition, len(def.Methods))
 	for _, method := range def.Methods {
 		key := fmt.Sprintf("%s.%s", method.Family, method.Command)
 		methods[key] = method
 	}
-
-	logger.Debug("decomposed command", "family", family, "command", command, "arguments", argumentsStr)
 
 	key := fmt.Sprintf("%s.%s", family, command)
 	method, ok := methods[key]

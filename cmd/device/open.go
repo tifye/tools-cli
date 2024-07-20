@@ -43,6 +43,18 @@ func newOpenCommand(tCli *cli.ToolsCli) *cobra.Command {
 				}
 			}()
 
+			// time.Sleep(2 * time.Second)
+			// _, err = linkMux.DefaultLink.SendLinkedRequest(linking.ControlLinkManagerCommand, []byte{0x12, 0x01, 0x00, 0x00, 0x00})
+			// if err != nil {
+			// 	tCli.Log.Error("err sending link manager command", "err", err)
+			// }
+			_, err = linkMux.DefaultLink.SendLinkedRequest(linking.ControlLinkManagerCommand, []byte{0x08, 0x01})
+			if err != nil {
+				tCli.Log.Error("err sending link manager command", "err", err)
+			}
+
+			// linkMux.Write([]byte{0x02, 0xFD, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63, 0x12, 0x9F, 0x57, 0xF7, 0x70, 0x8A, 0x03})
+
 			<-ctx.Done()
 			linkMux.Stop()
 		},

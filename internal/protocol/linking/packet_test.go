@@ -45,7 +45,7 @@ func TestMarshallLinkedPacket(t *testing.T) {
 	}
 	expected := []byte{0xFD, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x63, 0x12, 0x5F, 0x4D, 0xB6, 0x16, 0x74}
 
-	buf := make([]byte, len(input.Payload)+linkedPacketFrameSize)
+	buf := make([]byte, linkedPacketSize(len(input.Payload)))
 	err := marshallLinkedPacket(input, buf)
 	if err != nil {
 		t.Errorf("expected no error but got %q", err)
