@@ -42,18 +42,33 @@ func InitConfig() {
 	configPath = ConfigPath()
 	viper.AutomaticEnv()
 
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			err := os.MkdirAll(configPath, 0755)
-			if err != nil {
-				log.Error(err)
-			}
-			if err := viper.WriteConfig(); err != nil {
-				log.Error(err)
-			}
-		} else {
-			log.Error("Error reading config file: %v", err)
-		}
+	err := viper.ReadInConfig()
+	if err == nil {
+		return
+	}
+
+	_, ok := err.(viper.ConfigFileNotFoundError)
+	if !ok {
+		log.Error("Error reading config file: %v", err)
+		return
+	}
+
+	err = os.MkdirAll(filepath.Dir(configPath), 0755)
+	if err != nil {
+		log.Error("Error creating directory paths for config", "err", err)
+	}
+
+	file, err := os.Create(configPath)
+	if err != nil {
+		log.Error("Error creating config file", "err", err)
+		return
+	}
+
+	_ = file.Close()
+
+	if err := viper.WriteConfig(); err != nil {
+		log.Error("Error writing to config", "err", err)
+		return
 	}
 }
 
