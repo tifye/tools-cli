@@ -2,6 +2,7 @@ package pcatalog
 
 import (
 	"github.com/Tifufu/tools-cli/cmd/cli"
+	"github.com/Tifufu/tools-cli/cmd/pcatalog/list"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +17,7 @@ func NewProductCatalogCommand(tCli *cli.ToolsCli) *cobra.Command {
 
 	cmd.AddCommand(
 		newDownloadCommand(tCli),
+		list.NewListCommand(tCli),
 	)
 
 	return cmd

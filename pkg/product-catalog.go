@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/charmbracelet/log"
 )
@@ -43,4 +44,37 @@ func (pc *ProductCatalogService) DownloadDocument(ctx context.Context) (io.ReadC
 	}
 
 	return res.Body, nil
+}
+
+type ProductCatalogModel struct {
+	Model      string `json:"model"`
+	Type       int    `json:"type"`
+	Variant    int    `json:"variant"`
+	Brand      string `json:"brand"`
+	Platform   string `json:"platform"`
+	Generation string `json:"generation"`
+}
+
+type ProductCatalog struct {
+	Models []ProductCatalogModel `json:"models"`
+}
+
+func (pc *ProductCatalog) ListPlatformsForBrand(brand string) []string {
+	if pc == nil {
+		panic("about to dereference nil pointer on ProductCatalogModel in call to ListPlatformsForBrand")
+	}
+
+	platforms := make(map[string]struct{}, 0)
+	for _, model := range pc.Models {
+		if strings.EqualFold(brand, model.Brand) {
+			platforms[model.Platform] = struct{}{}
+		}
+	}
+
+	a := make([]string, 0, len(platforms))
+	for k, _ := range platforms {
+		a = append(a, k)
+	}
+
+	return a
 }
