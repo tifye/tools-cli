@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/Tifufu/tools-cli/cmd/config"
 	"github.com/Tifufu/tools-cli/cmd/device"
 	gsimLaunch "github.com/Tifufu/tools-cli/cmd/gsim-web-launch"
+	"github.com/Tifufu/tools-cli/cmd/pcatalog"
 	"github.com/Tifufu/tools-cli/cmd/profile"
 	"github.com/Tifufu/tools-cli/cmd/sites"
 	tifdefinition "github.com/Tifufu/tools-cli/cmd/tif-definition"
@@ -97,7 +99,7 @@ func Execute() {
 	rootCmd = newRootCommand(tCli)
 	addCommands(rootCmd, tCli)
 
-	err := rootCmd.Execute()
+	err := rootCmd.ExecuteContext(context.TODO())
 	if err != nil {
 		logger.Error("Error executing command", "err", err)
 		os.Exit(1)
@@ -115,6 +117,7 @@ func addCommands(cmd *cobra.Command, toolsCli *cli.ToolsCli) {
 		gsimLaunch.NewGsimWebLaunchCommand(toolsCli),
 		device.NewDeviceCommand(toolsCli),
 		tifdefinition.NewTifDefinitionCommand(toolsCli),
+		pcatalog.NewProductCatalogCommand(toolsCli),
 	)
 }
 
